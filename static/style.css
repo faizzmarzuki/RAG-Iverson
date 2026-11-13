@@ -1,0 +1,32 @@
+/* Chat-style page: a scrolling conversation with the message box fixed at the bottom. */
+:root { --bg: #faf9f5; --card: #ffffff; --text: #1f1e1d; --muted: #6b6a68; --line: #e4e1d8; --accent: #c15f3c; --error: #b00020; }
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; }
+
+/* Conversation */
+#chat { flex: 1; overflow-y: auto; width: 100%; max-width: 760px; margin: 0 auto; padding: 24px 16px; }
+.empty { color: var(--muted); text-align: center; margin-top: 30vh; }
+.msg { margin: 0 0 20px; line-height: 1.6; }
+.msg.user { background: #f0eee6; border-radius: 12px; padding: 10px 14px; margin-left: auto; width: fit-content; max-width: 85%; white-space: pre-wrap; }
+.msg p { white-space: pre-wrap; margin: 8px 0; }
+.error { color: var(--error); }
+.muted { color: var(--muted); font-size: .85rem; }
+
+/* Message box */
+#composer { width: calc(100% - 32px); max-width: 728px; margin: 0 auto 16px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+#query { width: 100%; border: none; outline: none; font: inherit; background: transparent; padding: 6px 0 10px; }
+.bar { display: flex; align-items: center; gap: 12px; }
+#upload-status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attach { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 8px; display: grid; place-items: center; cursor: pointer; color: var(--muted); font-size: 1.2rem; }
+.attach:hover { background: var(--bg); }
+.toggle { color: var(--muted); font-size: .85rem; cursor: pointer; white-space: nowrap; }
+#ask-btn { width: 32px; height: 32px; border: none; border-radius: 8px; background: var(--accent); color: #fff; font-size: 1.1rem; cursor: pointer; }
+#ask-btn:disabled { opacity: .4; cursor: default; }
+
+/* Tables in answers */
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+th { background: #f0eee6; }
+
+@media (max-width: 520px) { .toggle { white-space: normal; font-size: .8rem; } }

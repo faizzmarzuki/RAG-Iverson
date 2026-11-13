@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Analytics Agent</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <!-- Conversation: your questions and the agent's answers are added here -->
+  <main id="chat">
+    <p class="empty">Attach a CSV or XLSX file, then ask a question about it.</p>
+  </main>
+
+  <!-- Message box: attach a file, type, choose the scope, send -->
+  <form id="composer">
+    <input type="text" id="query" placeholder="Ask about your data" autocomplete="off">
+    <div class="bar">
+      <label class="attach" title="Attach a CSV or XLSX file (max 10 MB)">
+        &#43;
+        <input type="file" id="file" accept=".csv,.xlsx" hidden>
+      </label>
+      <span id="upload-status" class="muted"></span>
+      <label class="toggle"><input type="checkbox" id="allow-outside"> Allow questions outside the dataset</label>
+      <button type="submit" id="ask-btn" aria-label="Send">&uarr;</button>
+    </div>
+  </form>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
