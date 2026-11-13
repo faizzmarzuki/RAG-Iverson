@@ -7,6 +7,7 @@ What it does for one question:
   3. The LLM picks a tool, the tool runs, the LLM reads the result and writes the answer.
   4. It repeats step 3 until the LLM has enough information.
 """
+import httpx
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
@@ -49,27 +50,30 @@ async def ask_agent(question, dataset_id, allow_outside=False):
         ) from exc
 
     # The LLM, reached through OpenRouter. temperature=0 keeps answers consistent.
-    llm = ChatOpenAI(
-        model=MODEL,
-        base_url=OPENROUTER_BASE_URL,
-        api_key=OPENROUTER_API_KEY,
-        temperature=0,
-        timeout=30,  # give up on a stuck model call after 30s, then the retry loop tries again
-    )
+    # Own HTTP client per request: each request runs in a new event loop (asyncio.run in app.py),
+    # and a client shared between loops fails with "Event loop is closed" on the second question.
+    async with httpx.AsyncClient(timeout=30) as http:  # give up on a stuck model call after 30s
+        llm = ChatOpenAI(
+            model=MODEL,
+            base_url=OPENROUTER_BASE_URL,
+            api_key=OPENROUTER_API_KEY,
+            temperature=0,
+            http_async_client=http,
+        )
 
-    # create_react_agent runs the "LLM picks tool -> run tool -> LLM answers" loop.
-    scope = SCOPE_ANYTHING if allow_outside else SCOPE_DATASET_ONLY
-    agent = create_react_agent(llm, tools, prompt=SYSTEM_PROMPT.format(dataset_id=dataset_id, scope=scope))
-    # A model call can fail once (network blip, busy server) and work on the next try, so retry a few times.
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:
-            result = await agent.ainvoke({"messages": [("user", question)]})
-            return str(result["messages"][-1].content)
-        except Exception as exc:
-            if attempt < MAX_ATTEMPTS:
-                continue
-            # Most often: wrong or expired OpenRouter key, no credit, or the model is busy.
-            raise AgentError(
-                f"The AI model request failed ({type(exc).__name__}). "
-                "Check OPENROUTER_API_KEY (and credit) and MODEL in .env, then try again."
-            ) from exc
+        # create_react_agent runs the "LLM picks tool -> run tool -> LLM answers" loop.
+        scope = SCOPE_ANYTHING if allow_outside else SCOPE_DATASET_ONLY
+        agent = create_react_agent(llm, tools, prompt=SYSTEM_PROMPT.format(dataset_id=dataset_id, scope=scope))
+        # A model call can fail once (network blip, busy server) and work on the next try, so retry a few times.
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            try:
+                result = await agent.ainvoke({"messages": [("user", question)]})
+                return str(result["messages"][-1].content)
+            except Exception as exc:
+                if attempt < MAX_ATTEMPTS:
+                    continue
+                # Most often: wrong or expired OpenRouter key, no credit, or the model is busy.
+                raise AgentError(
+                    f"The AI model request failed ({type(exc).__name__}: {exc}). "
+                    "Check OPENROUTER_API_KEY (and credit) and MODEL in .env, then try again."
+                ) from exc

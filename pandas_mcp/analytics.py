@@ -27,13 +27,28 @@ ALLOWED_OPERATORS = {
 MAX_ROWS_RETURNED = 20
 
 
+def tidy_excel(raw):
+    """Turn a report-style sheet (title block, blank columns, header lower down) into a normal table.
+
+    shortcut: the header is the fuller row among the first 30 rows; only the first sheet is read.
+    """
+    header_row = raw.head(30).notna().sum(axis=1).idxmax()  # the title rows have few cells, the header row many
+    table = raw.iloc[header_row + 1:].dropna(how="all").dropna(axis=1, how="all")
+    names = raw.iloc[header_row][table.columns]
+    table.columns = [
+        " ".join(str(name).split()) if pd.notna(name) else f"column_{n}"  # one-line names, blank ones numbered
+        for n, name in zip(table.columns, names)
+    ]
+    return table.reset_index(drop=True).infer_objects()  # numbers read as text become real numbers
+
+
 def load_dataset(path):
     """Read a CSV or XLSX file into a DataFrame (a table in memory)."""
     path = Path(path)
     if path.suffix.lower() == ".csv":
         return pd.read_csv(path)
     if path.suffix.lower() == ".xlsx":
-        return pd.read_excel(path)
+        return tidy_excel(pd.read_excel(path, header=None))
     raise ValueError("Only .csv and .xlsx files are supported")
 
 
